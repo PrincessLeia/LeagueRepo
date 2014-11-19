@@ -1,0 +1,2 @@
+C:\Users\Sebastian\Dropbox\LeagueRepo\Vayne\Vayne\Vayne\bin\Debug\Vayne.exe.config
+C:\Users\Sebastian\Dropbox\LeagueRepo\Vayne\Vayne\Vayne\obj\Debug\Vayne.csprojResolveAssemblyReference.cache

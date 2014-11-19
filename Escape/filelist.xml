@@ -1,0 +1,8 @@
+<download name="Escape" type="Map">
+ <index src="filelist.xml" dest="filelist.xml"/>
+ <files>
+  <file src="escape.dds" dest="escape.dds" size="174896" md5="8fa95ebee5a31c8147b5441c629cbded"/>
+  <file src="Escape.xml" dest="Escape.xml" size="132" md5="4709d3b6b80a3fad7344041f932d3a02"/>
+  <file src="level.pak" dest="level.pak" size="11740246" md5="77c6788820d981cb0e2d87ee5037388f"/>
+ </files>
+</download>

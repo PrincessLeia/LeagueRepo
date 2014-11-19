@@ -21,6 +21,7 @@ namespace Sivir
         public static Spell Q;
         public static Spell W;
         public static Spell E;
+        public static Spell Qc;
         public static Spell R;
 
         public static int QMANA;
@@ -42,13 +43,13 @@ namespace Sivir
 
             //Create the spells
             Q = new Spell(SpellSlot.Q, 1250f);
+            Qc = new Spell(SpellSlot.Q, 1250f);
             W = new Spell(SpellSlot.W, float.MaxValue);
 
             R = new Spell(SpellSlot.R, 25000f);
 
             Q.SetSkillshot(0.25f, 90f, 1350f, false, SkillshotType.SkillshotLine);
-
-
+            Qc.SetSkillshot(0.25f, 90f, 1350f, true, SkillshotType.SkillshotLine);
             SpellList.Add(Q);
             SpellList.Add(W);
 
@@ -90,10 +91,9 @@ namespace Sivir
         private static void Game_OnGameUpdate(EventArgs args)
         {
             ManaMenager();
-
             if (Q.IsReady())
             {
-                var t = SimpleTs.GetTarget(W.Range, SimpleTs.DamageType.Physical);
+                var t = SimpleTs.GetTarget(Q.Range, SimpleTs.DamageType.Physical);
                 if (t.IsValidTarget())
                 {
                     var qDmg = W.GetDamage(t);
@@ -102,16 +102,16 @@ namespace Sivir
                     else if (Orbwalker.ActiveMode.ToString() == "Combo" && ObjectManager.Player.Mana > RMANA + QMANA)
                         Q.CastIfHitchanceEquals(t, HitChance.High, true);
                     else if (((Orbwalker.ActiveMode.ToString() == "Mixed" || Orbwalker.ActiveMode.ToString() == "LaneClear") && ObjectManager.Player.Mana > RMANA + WMANA + QMANA + QMANA))
-                        Q.CastIfHitchanceEquals(t, HitChance.High, true);
-                    else if (ObjectManager.Player.Mana > RMANA + QMANA)
+                        Qc.CastIfHitchanceEquals(t, HitChance.High, true);
+                }
+                if (ObjectManager.Player.Mana > RMANA + QMANA)
+                {
+                    foreach (var enemy in ObjectManager.Get<Obj_AI_Hero>().Where(enemy => enemy.IsValidTarget(Q.Range)))
                     {
-                        foreach (var enemy in ObjectManager.Get<Obj_AI_Hero>().Where(enemy => enemy.IsValidTarget(Q.Range - 150)))
-                        {
-                            if (enemy.HasBuffOfType(BuffType.Stun) || enemy.HasBuffOfType(BuffType.Snare) ||
-                             enemy.HasBuffOfType(BuffType.Charm) || enemy.HasBuffOfType(BuffType.Fear) ||
-                             enemy.HasBuffOfType(BuffType.Taunt) || enemy.HasBuffOfType(BuffType.Slow))
-                                Q.CastIfHitchanceEquals(t, HitChance.High, true);
-                        }
+                        if (enemy.HasBuffOfType(BuffType.Stun) || enemy.HasBuffOfType(BuffType.Snare) ||
+                            enemy.HasBuffOfType(BuffType.Charm) || enemy.HasBuffOfType(BuffType.Fear) ||
+                            enemy.HasBuffOfType(BuffType.Taunt) || enemy.HasBuffOfType(BuffType.Slow))
+                            Q.CastIfHitchanceEquals(t, HitChance.High, true);
                     }
                 }
             }
@@ -153,6 +153,7 @@ namespace Sivir
                 RMANA = QMANA - 10;
             else
                 RMANA = 100;
+
         }
     }
 

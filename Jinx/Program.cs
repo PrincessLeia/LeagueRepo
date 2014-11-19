@@ -201,7 +201,7 @@ namespace Jinx
                         R.CastIfHitchanceEquals(t, HitChance.High, true);
                     else if (ObjectManager.Player.Health < ObjectManager.Player.MaxHealth * 0.4 && rDamage * 1.4 > t.Health && CountEnemies(ObjectManager.Player, GetRealPowPowRange(t)) > 0 && distance > 300)
                         R.CastIfHitchanceEquals(t, HitChance.High, true);
-                    else if (rDamage  > t.Health && CountEnemies(t, 300) > 2 )
+                    else if (rDamage  > t.Health && CountEnemies(t, 200) > 2 )
                         R.CastIfHitchanceEquals(t, HitChance.High, true);
                 }
             }
