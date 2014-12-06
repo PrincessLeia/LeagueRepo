@@ -15,7 +15,6 @@ namespace Jinx
 
         //Orbwalker instance
         public static Orbwalking.Orbwalker Orbwalker;
-
         //Spells
         public static List<Spell> SpellList = new List<Spell>();
         public static Spell Q;
@@ -27,6 +26,7 @@ namespace Jinx
         public static int WMANA;
         public static int EMANA;
         public static int RMANA;
+        public static bool Farm = false;
         //AutoPotion
         public static Items.Item Potion = new Items.Item(2003, 0);
         public static Items.Item ManaPotion = new Items.Item(2004, 0);
@@ -70,7 +70,6 @@ namespace Jinx
 
             //Load the orbwalker and add it to the submenu.
             Orbwalker = new Orbwalking.Orbwalker(Config.SubMenu("Orbwalking"));
-
             Config.AddToMainMenu();
 
             //Add the events we are going to use:
@@ -82,6 +81,11 @@ namespace Jinx
         {
             ManaMenager();
             PotionMenager();
+            
+            if (Orbwalker.ActiveMode.ToString() == "Mixed" || Orbwalker.ActiveMode.ToString() == "LaneClear")
+                Farm = true;
+            else
+                Farm = false;
 
             if (ObjectManager.Player.Mana > RMANA + EMANA && E.IsReady())
             {
@@ -121,10 +125,10 @@ namespace Jinx
                         E.CastIfHitchanceEquals(enemy, HitChance.Dashing, true);
                 }
             }
-
+            
             if (Q.IsReady())
             {
-                if (Orbwalker.ActiveMode.ToString() == "Mixed" || Orbwalker.ActiveMode.ToString() == "LaneClear")
+                if (Farm)
                     if (ObjectManager.Player.Mana > RMANA + WMANA + EMANA && !FishBoneActive)
                         farmQ();
                 var t = SimpleTs.GetTarget(bonusRange(), SimpleTs.DamageType.Physical);
@@ -136,18 +140,18 @@ namespace Jinx
                     {
                         if (Orbwalker.ActiveMode.ToString() == "Combo")
                             Q.Cast();
-                        else if ((Orbwalker.ActiveMode.ToString() == "Mixed" || Orbwalker.ActiveMode.ToString() == "LaneClear") && ObjectManager.Player.Mana > RMANA + WMANA + EMANA + WMANA && distance < bonusRange() + 100 && t.Path.Count() > 0 &&
-                        t.Path[0].Distance(Player.ServerPosition) < Player.Distance(t))
-                            Q.Cast();
-                        else if ((Orbwalker.ActiveMode.ToString() == "Mixed" || Orbwalker.ActiveMode.ToString() == "LaneClear") && ObjectManager.Player.Mana > RMANA + WMANA + EMANA + WMANA && distance < bonusRange() + 80)
-                            Q.Cast();
+                        else if ((!Orbwalker.GetTarget().IsMinion && Farm) && ObjectManager.Player.Mana > RMANA + WMANA + EMANA + WMANA) 
+                            if (distance < bonusRange() + 120 && ObjectManager.Player.Path.Count() > 0 && ObjectManager.Player.Path[0].Distance(Player.ServerPosition) < t.Distance(ObjectManager.Player))
+                                Q.Cast();
+                            else if ( distance < bonusRange() + 70)
+                                Q.Cast();
                     }
                     else if (Orbwalker.ActiveMode.ToString() == "Combo" && FishBoneActive && (distance < powPowRange))
                         Q.Cast();
-                    else if ((Orbwalker.ActiveMode.ToString() == "Mixed" || Orbwalker.ActiveMode.ToString() == "LaneClear") && FishBoneActive && (distance > bonusRange() || distance < powPowRange))
+                    else if (Farm && FishBoneActive && (distance > bonusRange() || distance < powPowRange))
                          Q.Cast();
                 }
-                else if (FishBoneActive && (Orbwalker.ActiveMode.ToString() == "Mixed" || Orbwalker.ActiveMode.ToString() == "LaneClear"))
+                else if (FishBoneActive && Farm)
                     Q.Cast();
                 else if (!FishBoneActive && (Orbwalker.ActiveMode.ToString() == "Combo"))
                     Q.Cast();
@@ -159,16 +163,16 @@ namespace Jinx
                 if (t.IsValidTarget())
                 {
                     var wDmg = W.GetDamage(t);
-                    
+
                     if (GetRealDistance(t) > GetRealPowPowRange(t) && wDmg > t.Health)
                         W.Cast(t, true);
                     else if (Orbwalker.ActiveMode.ToString() == "Combo"  && ObjectManager.Player.Mana > RMANA + WMANA && CountEnemies(ObjectManager.Player, GetRealPowPowRange(t)) == 0 )
                         W.CastIfHitchanceEquals(t, HitChance.High, true);
-                    else if (((Orbwalker.ActiveMode.ToString() == "Mixed" || Orbwalker.ActiveMode.ToString() == "LaneClear") && ObjectManager.Player.Mana > RMANA + EMANA + WMANA + WMANA) && CountEnemies(ObjectManager.Player, GetRealPowPowRange(t)) == 0)
+                    else if ((Farm && ObjectManager.Player.Mana > RMANA + EMANA + WMANA + WMANA) && CountEnemies(ObjectManager.Player, GetRealPowPowRange(t)) == 0)
                             W.CastIfHitchanceEquals(t, HitChance.High, true);
                     else if (ObjectManager.Player.Mana > RMANA + WMANA && CountEnemies(ObjectManager.Player, GetRealPowPowRange(t)) == 0)
                     {
-                        foreach (var enemy in ObjectManager.Get<Obj_AI_Hero>().Where(enemy => enemy.IsValidTarget(E.Range - 150)))
+                        foreach (var enemy in ObjectManager.Get<Obj_AI_Hero>().Where(enemy => enemy.IsValidTarget(W.Range)))
                         {
                             if (enemy.HasBuffOfType(BuffType.Stun) || enemy.HasBuffOfType(BuffType.Snare) ||
                              enemy.HasBuffOfType(BuffType.Charm) || enemy.HasBuffOfType(BuffType.Fear) ||
@@ -178,7 +182,6 @@ namespace Jinx
                     }
                 }
             }
-
 
             if (R.IsReady())
             {
@@ -201,7 +204,7 @@ namespace Jinx
                     var distance = GetRealDistance(t);
                     var rDamage = R.GetDamage(t);
                     var powPowRange = GetRealPowPowRange(t);
-                    if (rDamage > t.Health && CountAlliesNearTarget(t, 600) == 0 && CountEnemies(ObjectManager.Player, 200f) == 0 && distance > bonusRange() + 100 && IsCollidingWithChamps(castPosition,300))
+                    if (rDamage > t.Health && CountAlliesNearTarget(t, 600) == 0 && CountEnemies(ObjectManager.Player, 200f) == 0 && distance > bonusRange() + 70 && IsCollidingWithChamps(castPosition,300))
                         R.CastIfHitchanceEquals(t, HitChance.High, true);
                     else if (ObjectManager.Player.Health < ObjectManager.Player.MaxHealth * 0.4 && rDamage * 1.4 > t.Health && CountEnemies(ObjectManager.Player, GetRealPowPowRange(t)) > 0 && distance > 300)
                         R.CastIfHitchanceEquals(t, HitChance.High, true);
@@ -229,13 +232,13 @@ namespace Jinx
 
         public static double ShouldUseE(string SpellName)
         {
+            if (SpellName == "ThreshQ")
+                return 0;
             if (SpellName == "KatarinaR")
                 return 0;
             if (SpellName == "AlZaharNetherGrasp")
                 return 0;
             if (SpellName == "GalioIdolOfDurand")
-                return 0;
-            if (SpellName == "ThreshQ")
                 return 0;
             if (SpellName == "LuxMaliceCannon")
                 return 0;
@@ -329,7 +332,6 @@ namespace Jinx
             float fountainRange = 750;
             if (Utility.Map.GetMap()._MapType == Utility.Map.MapType.SummonersRift)
                 fountainRange = 1050;
-
             return ObjectManager.Get<Obj_SpawnPoint>()
                     .Where(spawnPoint => spawnPoint.IsAlly)
                     .Any(spawnPoint => Vector2.Distance(ObjectManager.Player.Position.To2D(), spawnPoint.Position.To2D()) < fountainRange);

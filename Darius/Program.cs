@@ -37,7 +37,7 @@ namespace Darius
         {
             if (ObjectManager.Player.ChampionName != ChampionName) return;
 
-            Q = new Spell(SpellSlot.Q, 425);
+            Q = new Spell(SpellSlot.Q, 400);
             W = new Spell(SpellSlot.W, 145);
             E = new Spell(SpellSlot.E, 540);
             R = new Spell(SpellSlot.R, 460);
