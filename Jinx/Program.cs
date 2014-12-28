@@ -30,6 +30,7 @@ namespace Jinx
         //AutoPotion
         public static Items.Item Potion = new Items.Item(2003, 0);
         public static Items.Item ManaPotion = new Items.Item(2004, 0);
+        public static Items.Item Youmuu = new Items.Item(3142, 0);
         //Menu
         public static Menu Config;
 
@@ -62,7 +63,7 @@ namespace Jinx
             Config = new Menu(ChampionName, ChampionName, true);
 
             var targetSelectorMenu = new Menu("Target Selector", "Target Selector");
-            SimpleTs.AddToMenu(targetSelectorMenu);
+            TargetSelector.AddToMenu(targetSelectorMenu);
             Config.AddSubMenu(targetSelectorMenu);
 
             //Orbwalker submenu
@@ -90,7 +91,7 @@ namespace Jinx
             if (ObjectManager.Player.Mana > RMANA + EMANA && E.IsReady())
             {
 
-                var t = SimpleTs.GetTarget(900f, SimpleTs.DamageType.Physical);
+                var t = TargetSelector.GetTarget(900f, TargetSelector.DamageType.Physical);
 
                 var autoEi = true;
                 var autoEs = true;
@@ -131,16 +132,18 @@ namespace Jinx
                 if (Farm)
                     if (ObjectManager.Player.Mana > RMANA + WMANA + EMANA && !FishBoneActive)
                         farmQ();
-                var t = SimpleTs.GetTarget(bonusRange(), SimpleTs.DamageType.Physical);
+                var t = TargetSelector.GetTarget(bonusRange(), TargetSelector.DamageType.Physical);
                 if (t.IsValidTarget())
                 {
                     var distance = GetRealDistance(t);
                     var powPowRange = GetRealPowPowRange(t);
+                    if (Youmuu.IsReady() && (ObjectManager.Player.GetAutoAttackDamage(t) * 6 > t.Health || ObjectManager.Player.Health < ObjectManager.Player.MaxHealth * 0.4))
+                        Youmuu.Cast();
                     if (!FishBoneActive && (distance > powPowRange) && (ObjectManager.Player.Mana > RMANA + WMANA || ObjectManager.Player.GetAutoAttackDamage(t) > t.Health))
                     {
                         if (Orbwalker.ActiveMode.ToString() == "Combo")
                             Q.Cast();
-                        else if ((!Orbwalker.GetTarget().IsMinion && Farm) && ObjectManager.Player.Mana > RMANA + WMANA + EMANA + WMANA) 
+                        else if (Farm && ObjectManager.Player.Mana > RMANA + WMANA + EMANA + WMANA) 
                             if (distance < bonusRange() + 120 && ObjectManager.Player.Path.Count() > 0 && ObjectManager.Player.Path[0].Distance(Player.ServerPosition) < t.Distance(ObjectManager.Player))
                                 Q.Cast();
                             else if ( distance < bonusRange() + 70)
@@ -159,7 +162,7 @@ namespace Jinx
 
             if (W.IsReady())
             {
-                var t = SimpleTs.GetTarget(W.Range, SimpleTs.DamageType.Physical);
+                var t = TargetSelector.GetTarget(W.Range, TargetSelector.DamageType.Physical);
                 if (t.IsValidTarget())
                 {
                     var wDmg = W.GetDamage(t);
@@ -186,30 +189,20 @@ namespace Jinx
             if (R.IsReady())
             {
                 var maxR = 2500f;
-                var t = SimpleTs.GetTarget(maxR, SimpleTs.DamageType.Physical);
+                var t = TargetSelector.GetTarget(maxR, TargetSelector.DamageType.Physical);
 
                 if (t.IsValidTarget())
                 {
-                    var castPosition =
-                            Prediction.GetPrediction(
-                                new PredictionInput
-                                {
-                                    Unit = t,
-                                    Delay = 0.6f,
-                                    Radius = 150f,
-                                    Speed = 2000f,
-                                    Range = maxR,
-                                    Type = SkillshotType.SkillshotCircle,
-                                }).CastPosition;
+
                     var distance = GetRealDistance(t);
                     var rDamage = R.GetDamage(t);
                     var powPowRange = GetRealPowPowRange(t);
-                    if (rDamage > t.Health && CountAlliesNearTarget(t, 600) == 0 && CountEnemies(ObjectManager.Player, 200f) == 0 && distance > bonusRange() + 70 && IsCollidingWithChamps(castPosition,300))
-                        R.CastIfHitchanceEquals(t, HitChance.High, true);
+                    if (rDamage > t.Health && CountAlliesNearTarget(t, 600) == 0 && CountEnemies(ObjectManager.Player, 200f) == 0 && distance > bonusRange() + 70 )
+                        R.CastIfHitchanceEquals(t, HitChance.VeryHigh, true);
                     else if (ObjectManager.Player.Health < ObjectManager.Player.MaxHealth * 0.4 && rDamage * 1.4 > t.Health && CountEnemies(ObjectManager.Player, GetRealPowPowRange(t)) > 0 && distance > 300)
-                        R.CastIfHitchanceEquals(t, HitChance.High, true);
-                    else if (rDamage  > t.Health && CountEnemies(t, 200) > 2 )
-                        R.CastIfHitchanceEquals(t, HitChance.High, true);
+                        R.CastIfHitchanceEquals(t, HitChance.VeryHigh, true);
+                    else if (rDamage * 1.4 > t.Health && CountEnemies(t, 200) > 2)
+                        R.CastIfHitchanceEquals(t, HitChance.VeryHigh, true);
                 }
             }
         }
@@ -228,6 +221,19 @@ namespace Jinx
             double ShouldUse = ShouldUseE(args.SData.Name);
             if (unit.Team != ObjectManager.Player.Team && ShouldUse >= 0f)
                 E.Cast(unit, true);
+        }
+
+        bool IsCollidingWithChamps(Obj_AI_Hero source, Vector3 targetpos, float width)
+        {
+            var input = new PredictionInput
+            {
+                Radius = width,
+                Unit = source,
+            };
+
+            input.CollisionObjects[0] = CollisionableObjects.Heroes;
+
+            return Collision.GetCollision(new List<Vector3> { targetpos }, input).Any(); //x => x.NetworkId != targetnetid, hard to realize with teamult
         }
 
         public static double ShouldUseE(string SpellName)
